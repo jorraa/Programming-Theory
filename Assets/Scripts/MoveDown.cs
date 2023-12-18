@@ -9,13 +9,16 @@ public class MoveDown : MonoBehaviour {
     private float zBound = -8;
 
     private GameObject player;
-
     private PlayerController playerController;
+    private GameLevelController gameLevelController;
+
     // Start is called before the first frame update
     void Start()
     {
         player = GameObject.Find("Player");
         playerController = player.gameObject.GetComponent<PlayerController>();
+        
+        gameLevelController = GameObject.Find("GameLevel").gameObject.GetComponent<GameLevelController>();
     }
 
     // Update is called once per frame
@@ -24,15 +27,29 @@ public class MoveDown : MonoBehaviour {
         if(!gameOver) {
             transform.Translate(Vector3.back * Time.deltaTime);
             if (transform.position.z < zBound) {
-                if (gameObject.CompareTag("Prize")) {
-                    // player loses one point when prize is missed
-                    int minusPoints = playerController.minusMissedPrizes[playerController.gameLevel];
-                    playerController.points += minusPoints;
-                    Debug.Log("One prize destroyed, player loses " + minusPoints + " points, points now " + 
-                              playerController.points);
-                }
                 Destroy(gameObject);
+                if (gameObject.CompareTag("Prize")){
+                    CalcMissedPrizePoints();
+                }
+            }
+            
+            // Check possible GameOver reached
+            if (playerController.points < gameLevelController.GetLostGamePoints()){
+                playerController.gameOver = true;
+                Debug.Log("Game over");
             }
         }
+    }
+
+    /*
+     * player loses point(s) when prize is missed
+     */
+    private void CalcMissedPrizePoints() {
+         {
+            int minusPoints = gameLevelController.GetMissedPrizePoints(); // playerController.minusMissedPrizes[playerController.gameLevel];
+            playerController.points += minusPoints;
+            Debug.Log("One prize destroyed, player loses " + minusPoints + " points, points now " + 
+                      playerController.points);
+         }
     }
 }

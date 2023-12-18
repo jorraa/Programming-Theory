@@ -44,82 +44,76 @@ using UnityEngine.Windows.WebCam;
  */
 public class PlayerController : MonoBehaviour {
     public int points;
-    public float jumpForce;
-    public float gravityModifier = 1;
-    public bool isOnGround = true;
+    [SerializeField] float jumpForce;
+    [SerializeField] public float gravityModifier = 1;
+    [SerializeField]  bool isOnGround = true;
     public bool gameOver = false;
-    public float speed = 100;
-    /*
-     * Game levels 0, 1, 2, 3, 4
-     * Barrier collision
-        * 0 -> -1 point, 1 -> -1 point, 2 -> -2 points, 3 -> -2 points, 4 -> -3 points
-     * Missed prize
-        * 0 -> -1 point, 1 -> -2 points, 2 -> -2 points, 3 -> -3 points, 4 -> -3 points
-     * Game over, lost game
-        * 0 -> -12 points, 1 -> -11 points, 2 -> -10 points, 3 -> -9 points, 4 -> -8 points   
-     */
-    public int gameLevel = 0;
-    public int[] minusBarrierCollisions = { -1, -1, -2, -2, -3 };
-    public int[] minusMissedPrizes = { -1, -2, -2, -3, -3 };
-    public int[] minusLostGame = { -12, -11, -10, -9, -8 };
-    //private float leftLimit = -5.5f;
-    //private float rightLimit = 3f;
+    [SerializeField]  float speed = 100;
     private float playerPosZ = -4f;
     private Rigidbody playerRb;
+    private GameLevelController gameLevelController;
     
     // Start is called before the first frame update
     void Start() {
         playerRb = gameObject.GetComponent<Rigidbody>();
         Debug.Log("speed=" + speed);
+        gameLevelController = GameObject.Find("GameLevel").gameObject.GetComponent<GameLevelController>();
     }
 
     // Update is called once per frame
     void Update() {
-
         if(!gameOver) {
+            // Barrier may push player in front of it.
+            // Player has to move back, means go through the barrier 
             if (gameObject.transform.position.z < playerPosZ) {
                 transform.Translate(Vector3.forward * 0.10f);
-//Debug.Log("newZ=" + gameObject.transform.position.z);                
             }
             float horizontalInput = Input.GetAxis("Horizontal");        
             if(horizontalInput != 0.0f) {
-                // Debug.Log("horizontalInput: " + horizontalInput + ", force: " + Vector3.right * speed * horizontalInput);
-                playerRb.AddForce(Vector3.right * speed * horizontalInput);
-/*                if (gameObject.transform.position.x < leftLimit ||
-                    gameObject.transform.position.x > rightLimit) {
-                       // playerRb.AddForce(Vector3.right * speed * -horizontalInput);
-                }
-*/                
+                MovePlayer(horizontalInput);
             }
-            if(Input.GetKeyDown(KeyCode.Space) && isOnGround) {
-                isOnGround = false;
-                playerRb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            if(Input.GetKeyDown(KeyCode.Space)) {
+                JumpPlayer();
             }
         }
     }
 
-    private void OnCollisionEnter(Collision other) {
-//Debug.Log("1 OnCollisionEnter: " + other.gameObject.name);        
-        if (other.gameObject.CompareTag("Ground")) {
-            isOnGround = true;
-        }else if (other.gameObject.CompareTag("Barrier")) {
-            points += minusBarrierCollisions[gameLevel]; //1;
-            Debug.Log("Points=" + points +", " + minusBarrierCollisions[gameLevel] +" points lost");
-            if (points < minusLostGame[gameLevel]) { //-2) {
-                gameOver = true;
-                Debug.Log("Game over");
-            }else {
-                    
-            }
+    private void MovePlayer(float force) {
+        playerRb.AddForce(Vector3.right * speed * force);
+    }
+
+    private void JumpPlayer() {
+        if(isOnGround) {
+            isOnGround = false;
+            playerRb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
+    }
+    private void OnCollisionEnter(Collision other) {
+        HandleCollision(other);
     }
 
     private void OnTriggerEnter(Collider other) {
-Debug.Log("OnTriggerEnter");        
+        HandleCollision(other);
+    }
+
+    // Polymorphism - overloading HandleCollision
+    private void HandleCollision(Collision other) {
+        if (other.gameObject.CompareTag("Ground")) {
+            isOnGround = true;
+        }else if (other.gameObject.CompareTag("Barrier")) {
+            points += gameLevelController.GetBarrierCollisionPoints();
+            if (points < gameLevelController.GetLostGamePoints()){
+                gameOver = true;
+                Debug.Log("Game over");
+            }
+        }
+    }
+
+    private void HandleCollision(Collider other) {
         if (other.gameObject.CompareTag("Prize")) {
             int objPoints = other.gameObject.GetComponent<MoveDown>().points; 
             points += objPoints;
-Debug.Log("is Prize, points=" + objPoints + "totPoints: " + points);
+            Debug.Log("is Prize, points=" + objPoints + "totPoints: " + points);
             Destroy(other.gameObject);
         }
     }
