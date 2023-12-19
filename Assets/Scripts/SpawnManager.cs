@@ -23,15 +23,14 @@ public class SpawnManager : MonoBehaviour {
     private static float prizeHeightMax = 2f;
     private static float prizeDepth = 0.3f; // prizeZ size
     
-    // prize position
-    // limit position variables changed if they their real positions are changed
     private static float limitScaleX = 2f;
     private static float limitLeftX = -4f;
     private static float limitRightX = 2.8f;
     private static float gameareaWidth = limitRightX - limitLeftX - limitScaleX; // (2* half) //7f;
 
-    private static float prizePosMinX = limitLeftX + limitScaleX/4;
-    private static float prizePosMaxX = limitRightX - limitScaleX/4;
+    // prize position
+    private static float prizePosMinX = limitLeftX; // + limitScaleX/4;
+    private static float prizePosMaxX = limitRightX; // - limitScaleX/4;
 
     private static float prizePosMinY = 0.2f;
     private static float prizePosMaxY = 3f;
@@ -45,15 +44,16 @@ public class SpawnManager : MonoBehaviour {
         player = GameObject.Find("Player");
         barrierSpawnInterval = Random.Range(barrierSpawnIntervalMin, barrierSpawnIntervalMax);
         prizeSpawnInterval = Random.Range(prizeSpawnIntervalMin, prizeSpawnIntervalMax);
-        InvokeRepeating("SpawnRandomBarrier", startDelay, barrierSpawnInterval);
+        //InvokeRepeating("SpawnRandomBarrier", startDelay, barrierSpawnInterval); 
         InvokeRepeating("SpawnRandomPrize", startDelay, prizeSpawnInterval);
     }
 
     // Update is called once per frame
     void Update() {
-        gameOver = player.gameObject.GetComponent<PlayerController>().gameOver;   
+        gameOver = GameManager.Instance.gameOver;
     }
 
+    //No barriers running in OOP submission
     void SpawnRandomBarrier() {
         if(!gameOver) {
             float barrierHeight = Random.Range(1f, 3f);
